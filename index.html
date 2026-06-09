@@ -11,7 +11,8 @@
     <!-- FontAwesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- ExcelJS & FileSaver for Client-Side Excel Generation -->
+    <!-- SheetJS, ExcelJS & FileSaver for Client-Side Excel Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
@@ -805,70 +806,51 @@
             });
         }
 
-        // Parser simples de CSV para carregar no ExcelJS
-        async function loadCsvToWorkbook(text) {
-            const workbook = new ExcelJS.Workbook();
-            const sheet = workbook.addWorksheet('Dados');
-            const lines = text.split('\n');
-            lines.forEach(line => {
-                if (line.trim() === '') return;
-                const delimiter = line.includes(';') ? ';' : ',';
-                const row = line.split(delimiter).map(cell => {
-                    let clean = cell.trim();
-                    if (clean.startsWith('"') && clean.endsWith('"')) {
-                        clean = clean.slice(1, -1);
-                    }
-                    if (!isNaN(clean) && clean !== '') {
-                        return Number(clean);
-                    }
-                    return clean;
+        // Função para carregar planilhas usando SheetJS e convertê-las para o ExcelJS
+        async function loadSpreadsheetToExcelJS(file) {
+            const buffer = await readFileAsArrayBuffer(file);
+            const sjsWorkbook = XLSX.read(buffer, { type: 'array' });
+            const ejWorkbook = new ExcelJS.Workbook();
+            
+            for (const sheetName of sjsWorkbook.SheetNames) {
+                const sjsWorksheet = sjsWorkbook.Sheets[sheetName];
+                const rows = XLSX.utils.sheet_to_json(sjsWorksheet, { header: 1, defval: '' });
+                const ejWorksheet = ejWorkbook.addWorksheet(sheetName);
+                ejWorksheet.views = [{ showGridLines: true }];
+                
+                rows.forEach(row => {
+                    ejWorksheet.addRow(row);
                 });
-                sheet.addRow(row);
-            });
-            return workbook;
+            }
+            return ejWorkbook;
         }
 
-        // Extrai dados e colunas das planilhas para enviar de contexto à IA
+        // Extrai dados e colunas das planilhas para enviar de contexto à IA usando SheetJS
         async function extractFilePreview(file) {
             const ext = file.name.split('.').pop().toLowerCase();
             let preview = `--- ARQUIVO DE ENTRADA: ${file.name} ---\n`;
             
             try {
-                if (ext === 'xlsx' || ext === 'xls') {
+                if (['xlsx', 'xls', 'csv'].includes(ext)) {
                     const buffer = await readFileAsArrayBuffer(file);
-                    const tempWorkbook = new ExcelJS.Workbook();
-                    await tempWorkbook.xlsx.load(buffer);
+                    const sjsWorkbook = XLSX.read(buffer, { type: 'array' });
                     
-                    preview += `Tipo: Planilha Excel (.xlsx/.xls)\nAbas (Sheets): ${tempWorkbook.worksheets.map(w => w.name).join(', ')}\n`;
+                    preview += `Tipo: Planilha/Dados (${ext.toUpperCase()})\nAbas: ${sjsWorkbook.SheetNames.join(', ')}\n`;
                     
-                    for (const sheet of tempWorkbook.worksheets) {
-                        preview += `\n[Aba: ${sheet.name}]\n`;
-                        const rowCount = sheet.rowCount;
-                        const colCount = sheet.columnCount;
-                        preview += `Dimensões: ${rowCount} linhas por ${colCount} colunas\n`;
+                    for (const sheetName of sjsWorkbook.SheetNames) {
+                        preview += `\n[Aba: ${sheetName}]\n`;
+                        const sjsWorksheet = sjsWorkbook.Sheets[sheetName];
+                        const rows = XLSX.utils.sheet_to_json(sjsWorksheet, { header: 1, defval: '' });
                         
-                        // Pegar primeiras 8 linhas de exemplo
-                        preview += "Linhas de exemplo:\n";
-                        const rows = [];
-                        sheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-                            if (rowNumber <= 8) {
-                                // Converter valores para String simples de ler
-                                const rowValues = row.values.slice(1).map(val => {
-                                    if (val && typeof val === 'object') {
-                                        return val.result || val.text || JSON.stringify(val);
-                                    }
-                                    return val;
-                                });
-                                rows.push(rowValues.join(' | '));
-                            }
-                        });
-                        preview += rows.join('\n') + '\n';
+                        if (rows.length > 0) {
+                            preview += `Dimensões: ${rows.length} linhas por ${rows[0].length} colunas\n`;
+                            preview += "Linhas de exemplo:\n";
+                            const sampleRows = rows.slice(0, 8).map(row => row.join(' | '));
+                            preview += sampleRows.join('\n') + '\n';
+                        } else {
+                            preview += "Planilha vazia.\n";
+                        }
                     }
-                } else if (ext === 'csv') {
-                    const text = await readFileAsText(file);
-                    preview += `Tipo: Arquivo CSV\n`;
-                    const lines = text.split('\n').slice(0, 8);
-                    preview += `Linhas de exemplo:\n${lines.join('\n')}\n`;
                 } else {
                     const text = await readFileAsText(file);
                     preview += `Tipo: Arquivo de Texto (${ext})\n`;
@@ -915,14 +897,8 @@
                     const previewText = await extractFilePreview(file);
                     fileContexts += previewText;
                     
-                    if (ext === 'xlsx' || ext === 'xls') {
-                        const buffer = await readFileAsArrayBuffer(file);
-                        const wb = new ExcelJS.Workbook();
-                        await wb.xlsx.load(buffer);
-                        inputFilesMap[file.name] = wb;
-                    } else if (ext === 'csv') {
-                        const text = await readFileAsText(file);
-                        const wb = await loadCsvToWorkbook(text);
+                    if (['xlsx', 'xls', 'csv'].includes(ext)) {
+                        const wb = await loadSpreadsheetToExcelJS(file);
                         inputFilesMap[file.name] = wb;
                     } else {
                         const text = await readFileAsText(file);
@@ -1022,6 +998,12 @@ Por favor, gere apenas o corpo do código JavaScript assíncrono que será execu
                     
                     await runner(inputFilesMap, outputWorkbook, ExcelJS);
                     logOutput += "Código executado com sucesso!\nPlanilha gerada no buffer.\n";
+                    
+                    // Assegurar que há pelo menos uma aba para evitar arquivo corrompido
+                    if (outputWorkbook.worksheets.length === 0) {
+                        const ws = outputWorkbook.addWorksheet('Relatorio');
+                        ws.addRow(['Aviso: Nenhuma aba foi criada pelo script gerado pela IA.']);
+                    }
                     
                     // Gerar o buffer da planilha
                     generatedWorkbookBuffer = await outputWorkbook.xlsx.writeBuffer();
