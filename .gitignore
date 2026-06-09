@@ -1,0 +1,9 @@
+.env
+__pycache__/
+uploads/
+generated_reports/
+*.pyc
+.idea/
+.vscode/
+venv/
+.env.example

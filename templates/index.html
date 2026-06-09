@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador Inteligente de Relatórios Excel</title>
+    <!-- Google Fonts: Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --accent-primary: #6366f1;
+            --accent-primary-hover: #4f46e5;
+            --accent-secondary: #a855f7;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --success: #10b981;
+            --error: #ef4444;
+            --border-color: #475569;
+            --radius-lg: 16px;
+            --radius-md: 10px;
+            --font-display: 'Outfit', sans-serif;
+            --font-sans: 'Inter', sans-serif;
+            --font-mono: 'Fira Code', monospace;
+            --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.15) 0%, transparent 40%);
+        }
+
+        header {
+            border-bottom: 1px solid rgba(71, 85, 105, 0.4);
+            backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background-color: rgba(15, 23, 42, 0.8);
+        }
+
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo i {
+            background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+            -webkit-background-clip: border-box;
+            -webkit-text-fill-color: initial;
+            color: white;
+            padding: 0.5rem;
+            border-radius: var(--radius-md);
+            font-size: 1.25rem;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .api-key-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-md);
+            transition: var(--transition-smooth);
+        }
+
+        .api-key-container:focus-within {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+
+        .api-key-input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            width: 200px;
+        }
+
+        .api-key-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .api-key-status {
+            font-size: 0.75rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .status-configured {
+            background-color: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+        }
+
+        .status-missing {
+            background-color: rgba(239, 68, 68, 0.15);
+            color: var(--error);
+        }
+
+        main {
+            flex: 1;
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 2.5rem 2rem;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2.5rem;
+        }
+
+        @media (min-width: 900px) {
+            main {
+                grid-template-columns: 1.2fr 0.8fr;
+            }
+        }
+
+        .card {
+            background-color: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.3);
+            backdrop-filter: blur(8px);
+            transition: var(--transition-smooth);
+        }
+
+        .card:hover {
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        h2 {
+            font-family: var(--font-display);
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        h2 i {
+            color: var(--accent-primary);
+        }
+
+        .dropzone {
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 2.5rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            background-color: rgba(15, 23, 42, 0.3);
+        }
+
+        .dropzone:hover, .dropzone.dragover {
+            border-color: var(--accent-primary);
+            background-color: rgba(99, 102, 241, 0.05);
+            box-shadow: inset 0 0 10px rgba(99, 102, 241, 0.05);
+        }
+
+        .dropzone i {
+            font-size: 2.5rem;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            transition: var(--transition-smooth);
+        }
+
+        .dropzone:hover i {
+            color: var(--accent-primary);
+            transform: translateY(-4px);
+        }
+
+        .dropzone p {
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        .dropzone span {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            opacity: 0.7;
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        .file-list {
+            margin-top: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .file-item {
+            background-color: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 0.75rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .file-info i {
+            color: #10b981;
+            font-size: 1.25rem;
+        }
+
+        .file-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+            max-width: 250px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .file-size {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .remove-file {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 50%;
+            transition: var(--transition-smooth);
+        }
+
+        .remove-file:hover {
+            color: var(--error);
+            background-color: rgba(239, 68, 68, 0.1);
+        }
+
+        .form-group {
+            margin-top: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            background-color: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            font-size: 0.95rem;
+            resize: vertical;
+            transition: var(--transition-smooth);
+            outline: none;
+        }
+
+        textarea:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+
+        .btn-generate {
+            margin-top: 1.5rem;
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+            border: none;
+            border-radius: var(--radius-md);
+            color: white;
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 1.05rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+            transition: var(--transition-smooth);
+        }
+
+        .btn-generate:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+            filter: brightness(1.1);
+        }
+
+        .btn-generate:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .btn-generate:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Status and Logs Area */
+        .status-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .status-step {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+        }
+
+        .status-step.active {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .status-step.completed {
+            color: var(--success);
+        }
+
+        .status-step.failed {
+            color: var(--error);
+        }
+
+        .status-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            flex-shrink: 0;
+            transition: var(--transition-smooth);
+        }
+
+        .status-step.active .status-icon {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-step.completed .status-icon {
+            border-color: var(--success);
+            background-color: var(--success);
+            color: white;
+        }
+
+        .status-step.failed .status-icon {
+            border-color: var(--error);
+            background-color: var(--error);
+            color: white;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+            70% { box-shadow: 0 0 0 8px rgba(99, 102, 241, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+        }
+
+        .preview-box {
+            margin-top: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: var(--radius-md);
+            transition: var(--transition-smooth);
+        }
+
+        .tab-btn.active {
+            color: var(--text-primary);
+            background-color: var(--bg-tertiary);
+        }
+
+        pre {
+            background-color: #0b0f19;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            overflow-x: auto;
+            max-height: 350px;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: #38bdf8;
+            line-height: 1.5;
+        }
+
+        .console-error {
+            color: #f87171;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .btn-download {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            padding: 1rem 1.5rem;
+            border-radius: var(--radius-md);
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 1.05rem;
+            text-decoration: none;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+            transition: var(--transition-smooth);
+            width: 100%;
+            margin-top: 1rem;
+            animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .btn-download:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+            filter: brightness(1.1);
+        }
+
+        @keyframes bounceIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .suggestion-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .suggestion-tag {
+            background-color: var(--bg-tertiary);
+            color: var(--text-secondary);
+            padding: 0.35rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            border: 1px solid transparent;
+        }
+
+        .suggestion-tag:hover {
+            color: var(--text-primary);
+            background-color: var(--border-color);
+            border-color: var(--accent-primary);
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            border-top: 1px solid rgba(71, 85, 105, 0.2);
+            margin-top: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <i class="fa-solid fa-file-excel"></i>
+                <span>Relatório Inteligente</span>
+            </div>
+            <div class="api-key-container">
+                <i class="fa-solid fa-key" style="color: var(--accent-secondary)"></i>
+                <input type="password" id="api-key-input" class="api-key-input" placeholder="Google Gemini API Key">
+                <span id="api-status" class="api-key-status {{ 'status-configured' if has_key else 'status-missing' }}">
+                    {{ 'Configurada (.env)' if has_key else 'Sem Chave' }}
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Coluna Esquerda: Inputs -->
+        <section class="card">
+            <h2><i class="fa-solid fa-sliders"></i>Configurações do Relatório</h2>
+            
+            <div class="dropzone" id="dropzone">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <p>Arraste e solte seus arquivos de dados aqui</p>
+                <span>Formatos suportados: .xlsx, .xls, .csv, .txt (Máx 50MB)</span>
+                <input type="file" id="file-input" multiple accept=".xlsx,.xls,.csv,.txt">
+            </div>
+
+            <div class="file-list" id="file-list"></div>
+
+            <div class="form-group">
+                <label for="prompt">Como você quer o relatório?</label>
+                <textarea id="prompt" placeholder="Descreva as transformações, cálculos e a formatação desejada...&#10;Ex: 'Consolide as planilhas de vendas enviadas. Ordene pela coluna Faturamento de forma decrescente, adicione uma coluna de média e formate as células de cabeçalho em azul marinho com texto branco. Adicione linhas de grade.'"></textarea>
+                
+                <div class="suggestion-tags">
+                    <span class="suggestion-tag" onclick="usePrompt('Consolide as planilhas enviadas, remova duplicados e crie uma aba resumo com gráfico de barras de faturamento por mês.')">Consolidar e Criar Resumo</span>
+                    <span class="suggestion-tag" onclick="usePrompt('Ordene pela coluna de Valor de forma decrescente, formate a coluna como Moeda (R$), alterne cores de linhas e adicione uma linha de Total na parte inferior.')">Ordenar e Formatar como Moeda</span>
+                    <span class="suggestion-tag" onclick="usePrompt('Separe os dados em abas diferentes com base na coluna Região e formate a planilha inteira de forma minimalista.')">Separar por Abas</span>
+                </div>
+            </div>
+
+            <button class="btn-generate" id="btn-generate">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                Gerar Relatório Excel
+            </button>
+        </section>
+
+        <!-- Coluna Direita: Resultados/Progresso -->
+        <section class="card" style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <h2><i class="fa-solid fa-circle-nodes"></i>Processamento & Resultados</h2>
+            
+            <div class="status-container" id="status-container" style="display: none;">
+                <div class="status-step" id="step-upload">
+                    <div class="status-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                    <span>Enviando arquivos de entrada...</span>
+                </div>
+                <div class="status-step" id="step-ai">
+                    <div class="status-icon"><i class="fa-solid fa-brain"></i></div>
+                    <span>Gemini analisando dados e programando regras...</span>
+                </div>
+                <div class="status-step" id="step-compile">
+                    <div class="status-icon"><i class="fa-solid fa-code"></i></div>
+                    <span>Executando script Python e desenhando Excel...</span>
+                </div>
+                <div class="status-step" id="step-complete">
+                    <div class="status-icon"><i class="fa-solid fa-check"></i></div>
+                    <span>Pronto! Download liberado.</span>
+                </div>
+            </div>
+
+            <div id="no-action" style="text-align: center; padding: 3rem 1rem; color: var(--text-secondary);">
+                <i class="fa-solid fa-hourglass" style="font-size: 3rem; margin-bottom: 1.5rem; opacity: 0.5;"></i>
+                <p>Configure os arquivos, digite o prompt e clique em <strong>Gerar Relatório</strong> para ver a mágica acontecer.</p>
+            </div>
+
+            <div id="results-area" style="display: none;">
+                <div class="preview-box">
+                    <div class="tab-buttons">
+                        <button class="tab-btn active" onclick="switchTab('code')">Código Gerado</button>
+                        <button class="tab-btn" onclick="switchTab('logs')">Terminal/Logs</button>
+                    </div>
+                    <pre id="code-preview" style="display: block;"><code></code></pre>
+                    <pre id="logs-preview" style="display: none; color: #f8fafc;"><code></code></pre>
+                </div>
+
+                <a id="download-link" class="btn-download" href="#" download>
+                    <i class="fa-solid fa-file-arrow-down"></i>
+                    Baixar Planilha Excel Gerada
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Desenvolvido com carinho &copy; 2026. Processamento inteligente local via Google Gemini.</p>
+    </footer>
+
+    <script>
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('file-input');
+        const fileList = document.getElementById('file-list');
+        const btnGenerate = document.getElementById('btn-generate');
+        const promptInput = document.getElementById('prompt');
+        const apiKeyInput = document.getElementById('api-key-input');
+        const apiStatus = document.getElementById('api-status');
+        
+        const statusContainer = document.getElementById('status-container');
+        const noAction = document.getElementById('no-action');
+        const resultsArea = document.getElementById('results-area');
+        
+        const stepUpload = document.getElementById('step-upload');
+        const stepAi = document.getElementById('step-ai');
+        const stepCompile = document.getElementById('step-compile');
+        const stepComplete = document.getElementById('step-complete');
+        
+        const codePreview = document.getElementById('code-preview').querySelector('code');
+        const logsPreview = document.getElementById('logs-preview').querySelector('code');
+        const downloadLink = document.getElementById('download-link');
+
+        let selectedFiles = [];
+
+        // Atualizar visual da chave API se o usuário digitar
+        apiKeyInput.addEventListener('input', () => {
+            if (apiKeyInput.value.trim() !== '') {
+                apiStatus.textContent = "Definida na Sessão";
+                apiStatus.className = "api-key-status status-configured";
+            } else {
+                if ("{{ has_key }}" === "True") {
+                    apiStatus.textContent = "Configurada (.env)";
+                    apiStatus.className = "api-key-status status-configured";
+                } else {
+                    apiStatus.textContent = "Sem Chave";
+                    apiStatus.className = "api-key-status status-missing";
+                }
+            }
+        });
+
+        // Trigger file input
+        dropzone.addEventListener('click', () => fileInput.click());
+
+        // Drag events
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropzone.classList.add('dragover');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropzone.classList.remove('dragover');
+            }, false);
+        });
+
+        // Drop files
+        dropzone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        });
+
+        fileInput.addEventListener('change', () => {
+            handleFiles(fileInput.files);
+        });
+
+        function handleFiles(files) {
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                if (!selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
+                    selectedFiles.push(file);
+                }
+            }
+            updateFileList();
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            updateFileList();
+        }
+
+        function updateFileList() {
+            fileList.innerHTML = '';
+            selectedFiles.forEach((file, index) => {
+                const sizeKb = (file.size / 1024).toFixed(1);
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <div class="file-info">
+                        <i class="fa-solid fa-file-excel"></i>
+                        <div>
+                            <div class="file-name" title="${file.name}">${file.name}</div>
+                            <div class="file-size">${sizeKb} KB</div>
+                        </div>
+                    </div>
+                    <button class="remove-file" onclick="removeFile(${index})">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                `;
+                fileList.appendChild(fileItem);
+            });
+        }
+
+        function usePrompt(text) {
+            promptInput.value = text;
+        }
+
+        function switchTab(tab) {
+            const codeBox = document.getElementById('code-preview');
+            const logsBox = document.getElementById('logs-preview');
+            const btns = document.querySelectorAll('.tab-btn');
+            
+            if (tab === 'code') {
+                codeBox.style.display = 'block';
+                logsBox.style.display = 'none';
+                btns[0].classList.add('active');
+                btns[1].classList.remove('active');
+            } else {
+                codeBox.style.display = 'none';
+                logsBox.style.display = 'block';
+                btns[0].classList.remove('active');
+                btns[1].classList.add('active');
+            }
+        }
+
+        btnGenerate.addEventListener('click', async () => {
+            const prompt = promptInput.value.trim();
+            if (!prompt) {
+                alert('Por favor, descreva como deseja o relatório.');
+                return;
+            }
+
+            const apiKey = apiKeyInput.value.trim();
+
+            // Preparar dados
+            const formData = new FormData();
+            formData.append('prompt', prompt);
+            formData.append('apiKey', apiKey);
+            selectedFiles.forEach(file => {
+                formData.append('files', file);
+            });
+
+            // UI feedback
+            btnGenerate.disabled = true;
+            noAction.style.display = 'none';
+            resultsArea.style.display = 'none';
+            statusContainer.style.display = 'flex';
+            
+            // Reset status steps
+            resetSteps();
+            
+            try {
+                // Etapa 1: Upload
+                setStepStatus(stepUpload, 'active');
+                
+                // Realizar requisição
+                setStepStatus(stepUpload, 'completed');
+                setStepStatus(stepAi, 'active');
+                
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    setStepStatus(stepAi, 'completed');
+                    setStepStatus(stepCompile, 'completed');
+                    setStepStatus(stepComplete, 'completed');
+                    
+                    // Exibir código e logs
+                    codePreview.textContent = data.code;
+                    codePreview.className = "language-python";
+                    logsPreview.textContent = data.logs || "Código executado com sucesso sem logs no stdout.";
+                    logsPreview.classList.remove('console-error');
+                    
+                    // Link de download
+                    downloadLink.href = `/download/${data.filename}`;
+                    
+                    resultsArea.style.display = 'block';
+                } else {
+                    handleFailure(data);
+                }
+                
+            } catch (err) {
+                handleFailure({
+                    error: 'Erro de rede ou falha de conexão com o servidor local.',
+                    details: err.message
+                });
+            } finally {
+                btnGenerate.disabled = false;
+            }
+        });
+
+        function resetSteps() {
+            [stepUpload, stepAi, stepCompile, stepComplete].forEach(step => {
+                step.className = 'status-step';
+                step.querySelector('.status-icon').innerHTML = getStepDefaultIcon(step.id);
+            });
+        }
+
+        function getStepDefaultIcon(id) {
+            switch(id) {
+                case 'step-upload': return '<i class="fa-solid fa-cloud-arrow-up"></i>';
+                case 'step-ai': return '<i class="fa-solid fa-brain"></i>';
+                case 'step-compile': return '<i class="fa-solid fa-code"></i>';
+                case 'step-complete': return '<i class="fa-solid fa-check"></i>';
+            }
+        }
+
+        function setStepStatus(step, status) {
+            step.className = `status-step ${status}`;
+            const icon = step.querySelector('.status-icon');
+            if (status === 'active') {
+                icon.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            } else if (status === 'completed') {
+                icon.innerHTML = '<i class="fa-solid fa-check"></i>';
+            } else if (status === 'failed') {
+                icon.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+            }
+        }
+
+        function handleFailure(data) {
+            // Marcar etapas ativas como falhas
+            document.querySelectorAll('.status-step.active').forEach(step => {
+                setStepStatus(step, 'failed');
+            });
+            
+            codePreview.textContent = data.code || "# Nenhum código foi gerado.";
+            logsPreview.textContent = `Erro: ${data.error}\n\nDetalhes:\n${data.details || data.traceback || 'Sem detalhes adicionais.'}`;
+            logsPreview.classList.add('console-error');
+            
+            resultsArea.style.display = 'block';
+            switchTab('logs');
+        }
+    </script>
+</body>
+</html>
