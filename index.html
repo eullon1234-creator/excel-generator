@@ -911,22 +911,29 @@
                 // Etapa 2: Chamar Gemini para Codificar
                 setStepStatus(stepAi, 'active');
                 
-                const systemInstruction = `Você é um engenheiro de software especialista em manipulação de planilhas com JavaScript.
-Sua tarefa é ler dados de entrada fornecidos e gerar código JavaScript para processar esses dados e criar um relatório formatado usando a biblioteca ExcelJS.
+                const systemInstruction = `Você é um engenheiro de software especialista em manipulação e design de planilhas com JavaScript.
+Sua tarefa é ler dados de entrada fornecidos e gerar código JavaScript para processar esses dados e criar um relatório formatado e visualmente incrível usando a biblioteca ExcelJS.
 
-Diretrizes estritas para o código JavaScript:
-1. Você tem acesso direto aos seguintes argumentos:
-   - 'INPUT_FILES': Um objeto mapeando o nome do arquivo original para a instância de ExcelJS.Workbook ou texto.
+Diretrizes estritas de DESIGN e ESTRUTURA para a planilha:
+1. Argumentos disponíveis no escopo:
+   - 'INPUT_FILES': Objeto contendo os arquivos originais mapeados por nome.
      Exemplo para ler planilha: const wb = INPUT_FILES['dados.xlsx']; const sheet = wb.getWorksheet(1);
-   - 'outputWorkbook': Uma nova instância de ExcelJS.Workbook() na qual você DEVE salvar os dados e criar planilhas.
-   - 'ExcelJS': O namespace do ExcelJS para estilos, fontes, alinhamentos, bordas etc.
-2. A planilha final deve ser profissional:
-   - Ajuste a largura das colunas de forma dinâmica para que os textos não fiquem cortados.
-   - Use uma paleta de cores moderna (ex: cabeçalhos em Azul Escuro '#1F4E78' com texto em branco, linhas alternadas em cinza claro '#F2F2F2').
-   - Habilite as linhas de grade visíveis na planilha de saída: ws.views = [{ showGridLines: true }];
-   - Adicione fórmulas Excel reais (ex: '=SUM(C2:C10)') para valores de totais em vez de valores fixados.
-   - Formate números adequadamente (R$ #.##0,00 para moedas, porcentagens, datas).
-3. IMPORTANTE: Retorne APENAS o código JavaScript puro dentro do bloco de código \`\`\`javascript e \`\`\`. Sem qualquer explicação extra.`;
+   - 'outputWorkbook': Uma nova instância limpa de ExcelJS.Workbook() na qual você DEVE criar e salvar o relatório.
+   - 'ExcelJS': O namespace da biblioteca ExcelJS (utilize para Font, PatternFill, Alignment, Border, Side, etc.).
+
+2. AESTHETICS & DESIGN PREMIUM (OBRIGATÓRIO):
+   - Fonte: Use a fonte 'Segoe UI' ou 'Calibri' em todas as células para manter um padrão moderno.
+   - Título Destacado: Mescle a primeira linha (A1 até a última coluna de dados) e crie um título em negrito (tamanho 16, cor do texto azul escuro ou cinza escuro, com fundo de destaque suave). Adicione um subtítulo explicativo na linha 2. Aumente a altura dessas linhas.
+   - Cabeçalhos de Tabela: Use fundo azul escuro corporativo ('#1F4E78') com texto branco em negrito, alinhado ao centro e com altura de linha generosa (ex: row.height = 25).
+   - Cores Zebra: Alterne as linhas de dados para facilitar a leitura. Use fundo branco nas linhas ímpares e um tom de cinza/azul extremamente sutil ('#F2F5F8') nas linhas pares.
+   - Linhas de Grade e Bordas: Sempre habilite as linhas de grade da planilha com 'ws.views = [{ showGridLines: true }];' e aplique bordas finas cinza claro ('#D9D9D9') em todas as células de dados para um aspecto clean.
+   - Alinhamentos Inteligentes: Textos e nomes alinhados à esquerda. Números, datas, códigos, CPFs e status centralizados.
+   - Formatação de Células: Formate valores monetários para moeda real ('R$ #.##0,00'), datas para 'dd/mm/aaaa', inteiros para '0' e decimais.
+   - Largura Automática das Colunas: Calcule a largura de cada coluna com base no maior texto da coluna e adicione uma margem de segurança de +4 caracteres (largura mínima de 12). Nunca corte os textos das células.
+   - Destaque de Status: Se houver coluna de status, formate palavras como 'Ativo', 'Concluído' ou 'Sim' em negrito com tom verde escuro ('#385723'). Palavras como 'Inativo', 'Pendente' ou 'Não' em tom vermelho escuro ('#C00000').
+   - Totais e Fórmulas: Adicione uma linha de resumo/totais na parte inferior usando fórmulas Excel reais (ex: '=SUM(C5:C20)') com fonte em negrito e borda dupla na parte inferior.
+
+3. SAÍDA: Retorne APENAS o código JavaScript puro dentro do bloco de código \`\`\`javascript e \`\`\`. Sem qualquer explicação textual extra.`;
 
                 const promptContent = `
 Arquivos disponíveis no objeto INPUT_FILES:
