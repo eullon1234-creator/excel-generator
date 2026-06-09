@@ -1,47 +1,30 @@
 # Gerador Inteligente de Relatórios Excel 📊🚀
 
-Este é um aplicativo web local desenvolvido em Python (Flask) e HTML/CSS/JS moderno que utiliza a inteligência artificial **Google Gemini** para criar e formatar planilhas Excel automaticamente a partir de arquivos de dados enviados (Excel, CSV, TXT) e instruções em linguagem natural.
+Este é um aplicativo web **100% client-side** (executado totalmente no seu navegador) que utiliza a inteligência artificial **Google Gemini** para criar e formatar planilhas Excel automaticamente a partir de arquivos de dados enviados (Excel, CSV, TXT) e instruções em linguagem natural.
 
-O aplicativo gera dinamicamente código Python customizado utilizando as bibliotecas `pandas` e `openpyxl` para estruturar e estilizar planilhas de forma profissional.
+Como o aplicativo processa tudo direto no navegador (usando as bibliotecas `exceljs` e `file-saver`), ele pode ser hospedado de forma estática e gratuita no **GitHub Pages**!
 
-## 🛠️ Tecnologias
-- **Backend:** Python 3, Flask
-- **Processamento de Dados & Excel:** Pandas, OpenPyXL
-- **IA:** Google Generative AI (Gemini 2.5 Flash)
-- **Frontend:** HTML5, CSS3 (Design Moderno com Tema Escuro), JavaScript Vanilla
-- **Repositório:** [GitHub - excel-generator](https://github.com/eullon1234-creator/excel-generator)
+## 🔗 Link para Usar o Aplicativo
+Acesse o aplicativo diretamente pelo navegador através do link do GitHub Pages:
+👉 **[https://eullon1234-creator.github.io/excel-generator/](https://eullon1234-creator.github.io/excel-generator/)**
 
-## 🚀 Como Executar o Projeto Localmente
-
-### Pré-requisitos
-Certifique-se de ter o Python instalado em seu computador.
-
-### Passo 1: Clonar o repositório
-```bash
-git clone https://github.com/eullon1234-creator/excel-generator.git
-cd excel-generator
-```
-
-### Passo 2: Instalar as dependências
-```bash
-pip install -r requirements.txt
-```
-
-### Passo 3: Configurar a Chave de API do Gemini
-Crie um arquivo `.env` na raiz do projeto contendo sua chave do Google Gemini:
-```env
-GEMINI_API_KEY=sua_chave_de_api_aqui
-```
-*(Você também pode colar a chave diretamente na tela do aplicativo ao executá-lo)*.
-
-### Passo 4: Iniciar o Servidor
-```bash
-python app.py
-```
-O aplicativo estará disponível no seu navegador em: **`http://127.0.0.1:5000`**
+---
 
 ## 💡 Como Usar
-1. Faça o upload das suas planilhas de origem (ou arquivos de texto/CSV).
-2. Na caixa de texto, escreva suas instruções (ex: *"Mescle as planilhas de vendas e produtos pela coluna ID_Produto. Ordene por Faturamento de forma decrescente, pinte o cabeçalho de azul marinho com texto branco e adicione uma coluna de média calculada"*).
-3. Clique em **Gerar Relatório Excel**.
-4. Acompanhe as etapas de geração e, ao terminar, clique em **Baixar Planilha Excel Gerada**.
+1. Acesse o link do aplicativo.
+2. No canto superior direito, cole a sua **Google Gemini API Key** (sua chave é armazenada de forma segura apenas no seu navegador).
+3. Faça o upload das suas planilhas de origem (ou arquivos de texto/CSV) arrastando-as para a área de upload.
+4. Na caixa de texto, escreva suas instruções (ex: *"Mescle as planilhas de vendas e ordene por faturamento de forma decrescente. Deixe o cabeçalho em azul escuro e coloque linhas de grade."*).
+5. Clique em **Gerar Relatório Excel**.
+6. Aguarde o processamento direto no seu navegador e clique em **Baixar Planilha Excel Gerada**!
+
+---
+
+## 🛠️ Como Habilitar o GitHub Pages no seu Repositório (Caso ainda não esteja ativo)
+Se o link acima ainda não estiver ativo, ative-o em 2 passos simples:
+1. Acesse o seu repositório no GitHub: [https://github.com/eullon1234-creator/excel-generator](https://github.com/eullon1234-creator/excel-generator)
+2. Vá em **Settings** (Configurações) na barra superior.
+3. No menu esquerdo, clique em **Pages**.
+4. Sob a seção **Build and deployment** -> **Branch**, selecione a branch `main` e a pasta `/ (root)`.
+5. Clique em **Save** (Salvar).
+6. Aguarde cerca de 1 a 2 minutos e o site estará ativo no seu link!
