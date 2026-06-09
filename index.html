@@ -11,6 +11,10 @@
     <!-- FontAwesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- ExcelJS & FileSaver for Client-Side Excel Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
     <style>
         :root {
             --bg-primary: #0f172a;
@@ -67,6 +71,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
         }
 
         .logo {
@@ -115,7 +121,7 @@
             color: var(--text-primary);
             font-family: var(--font-mono);
             font-size: 0.85rem;
-            width: 200px;
+            width: 250px;
         }
 
         .api-key-input::placeholder {
@@ -553,14 +559,12 @@
         <div class="header-container">
             <div class="logo">
                 <i class="fa-solid fa-file-excel"></i>
-                <span>Relatório Inteligente</span>
+                <span>Relatório Inteligente (Web)</span>
             </div>
             <div class="api-key-container">
                 <i class="fa-solid fa-key" style="color: var(--accent-secondary)"></i>
-                <input type="password" id="api-key-input" class="api-key-input" placeholder="Google Gemini API Key">
-                <span id="api-status" class="api-key-status {{ 'status-configured' if has_key else 'status-missing' }}">
-                    {{ 'Configurada (.env)' if has_key else 'Sem Chave' }}
-                </span>
+                <input type="password" id="api-key-input" class="api-key-input" placeholder="Cole sua Gemini API Key aqui">
+                <span id="api-status" class="api-key-status status-missing">Sem Chave</span>
             </div>
         </div>
     </header>
@@ -573,7 +577,7 @@
             <div class="dropzone" id="dropzone">
                 <i class="fa-solid fa-cloud-arrow-up"></i>
                 <p>Arraste e solte seus arquivos de dados aqui</p>
-                <span>Formatos suportados: .xlsx, .xls, .csv, .txt (Máx 50MB)</span>
+                <span>Formatos suportados: .xlsx, .xls, .csv, .txt</span>
                 <input type="file" id="file-input" multiple accept=".xlsx,.xls,.csv,.txt">
             </div>
 
@@ -584,7 +588,7 @@
                 <textarea id="prompt" placeholder="Descreva as transformações, cálculos e a formatação desejada...&#10;Ex: 'Consolide as planilhas de vendas enviadas. Ordene pela coluna Faturamento de forma decrescente, adicione uma coluna de média e formate as células de cabeçalho em azul marinho com texto branco. Adicione linhas de grade.'"></textarea>
                 
                 <div class="suggestion-tags">
-                    <span class="suggestion-tag" onclick="usePrompt('Consolide as planilhas enviadas, remova duplicados e crie uma aba resumo com gráfico de barras de faturamento por mês.')">Consolidar e Criar Resumo</span>
+                    <span class="suggestion-tag" onclick="usePrompt('Consolide as planilhas enviadas, remova duplicados e crie uma aba resumo com um totalizador de faturamento.')">Consolidar e Criar Resumo</span>
                     <span class="suggestion-tag" onclick="usePrompt('Ordene pela coluna de Valor de forma decrescente, formate a coluna como Moeda (R$), alterne cores de linhas e adicione uma linha de Total na parte inferior.')">Ordenar e Formatar como Moeda</span>
                     <span class="suggestion-tag" onclick="usePrompt('Separe os dados em abas diferentes com base na coluna Região e formate a planilha inteira de forma minimalista.')">Separar por Abas</span>
                 </div>
@@ -602,16 +606,16 @@
             
             <div class="status-container" id="status-container" style="display: none;">
                 <div class="status-step" id="step-upload">
-                    <div class="status-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
-                    <span>Enviando arquivos de entrada...</span>
+                    <div class="status-icon"><i class="fa-solid fa-file-excel"></i></div>
+                    <span>Lendo arquivos de entrada no navegador...</span>
                 </div>
                 <div class="status-step" id="step-ai">
                     <div class="status-icon"><i class="fa-solid fa-brain"></i></div>
-                    <span>Gemini analisando dados e programando regras...</span>
+                    <span>Gemini analisando dados e programando em JavaScript...</span>
                 </div>
                 <div class="status-step" id="step-compile">
                     <div class="status-icon"><i class="fa-solid fa-code"></i></div>
-                    <span>Executando script Python e desenhando Excel...</span>
+                    <span>Executando regras no navegador e desenhando Excel...</span>
                 </div>
                 <div class="status-step" id="step-complete">
                     <div class="status-icon"><i class="fa-solid fa-check"></i></div>
@@ -621,29 +625,29 @@
 
             <div id="no-action" style="text-align: center; padding: 3rem 1rem; color: var(--text-secondary);">
                 <i class="fa-solid fa-hourglass" style="font-size: 3rem; margin-bottom: 1.5rem; opacity: 0.5;"></i>
-                <p>Configure os arquivos, digite o prompt e clique em <strong>Gerar Relatório</strong> para ver a mágica acontecer.</p>
+                <p>Insira a sua chave do Gemini, anexe os arquivos e descreva o relatório para começar.</p>
             </div>
 
             <div id="results-area" style="display: none;">
                 <div class="preview-box">
                     <div class="tab-buttons">
-                        <button class="tab-btn active" onclick="switchTab('code')">Código Gerado</button>
+                        <button class="tab-btn active" onclick="switchTab('code')">Código Gerado (JS)</button>
                         <button class="tab-btn" onclick="switchTab('logs')">Terminal/Logs</button>
                     </div>
                     <pre id="code-preview" style="display: block;"><code></code></pre>
                     <pre id="logs-preview" style="display: none; color: #f8fafc;"><code></code></pre>
                 </div>
 
-                <a id="download-link" class="btn-download" href="#" download>
+                <button id="download-btn" class="btn-download">
                     <i class="fa-solid fa-file-arrow-down"></i>
                     Baixar Planilha Excel Gerada
-                </a>
+                </button>
             </div>
         </section>
     </main>
 
     <footer>
-        <p>Desenvolvido com carinho &copy; 2026. Processamento inteligente local via Google Gemini.</p>
+        <p>Desenvolvido com carinho &copy; 2026. Processamento inteligente local direto no navegador.</p>
         <p style="margin-top: 0.5rem;"><a href="https://github.com/eullon1234-creator/excel-generator" target="_blank" style="color: var(--text-secondary); text-decoration: none; transition: var(--transition-smooth);"><i class="fa-brands fa-github"></i> Ver no GitHub</a></p>
     </footer>
 
@@ -667,25 +671,31 @@
         
         const codePreview = document.getElementById('code-preview').querySelector('code');
         const logsPreview = document.getElementById('logs-preview').querySelector('code');
-        const downloadLink = document.getElementById('download-link');
+        const downloadBtn = document.getElementById('download-btn');
 
         let selectedFiles = [];
+        let generatedWorkbookBuffer = null;
 
-        // Atualizar visual da chave API se o usuário digitar
+        // Recuperar chave de API do localStorage, se existir
+        if (localStorage.getItem('gemini_api_key')) {
+            apiKeyInput.value = localStorage.getItem('gemini_api_key');
+            updateApiKeyStatus();
+        }
+
         apiKeyInput.addEventListener('input', () => {
+            updateApiKeyStatus();
+            localStorage.setItem('gemini_api_key', apiKeyInput.value.trim());
+        });
+
+        function updateApiKeyStatus() {
             if (apiKeyInput.value.trim() !== '') {
-                apiStatus.textContent = "Definida na Sessão";
+                apiStatus.textContent = "Chave Definida";
                 apiStatus.className = "api-key-status status-configured";
             } else {
-                if ("{{ has_key }}" === "True") {
-                    apiStatus.textContent = "Configurada (.env)";
-                    apiStatus.className = "api-key-status status-configured";
-                } else {
-                    apiStatus.textContent = "Sem Chave";
-                    apiStatus.className = "api-key-status status-missing";
-                }
+                apiStatus.textContent = "Sem Chave";
+                apiStatus.className = "api-key-status status-missing";
             }
-        });
+        }
 
         // Trigger file input
         dropzone.addEventListener('click', () => fileInput.click());
@@ -775,22 +785,114 @@
             }
         }
 
+        // Função utilitária para converter arquivo em ArrayBuffer no navegador
+        function readFileAsArrayBuffer(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(reader.error);
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        // Função utilitária para ler arquivo como texto
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(reader.error);
+                reader.readAsText(file, 'UTF-8');
+            });
+        }
+
+        // Parser simples de CSV para carregar no ExcelJS
+        async function loadCsvToWorkbook(text) {
+            const workbook = new ExcelJS.Workbook();
+            const sheet = workbook.addWorksheet('Dados');
+            const lines = text.split('\n');
+            lines.forEach(line => {
+                if (line.trim() === '') return;
+                const delimiter = line.includes(';') ? ';' : ',';
+                const row = line.split(delimiter).map(cell => {
+                    let clean = cell.trim();
+                    if (clean.startsWith('"') && clean.endsWith('"')) {
+                        clean = clean.slice(1, -1);
+                    }
+                    if (!isNaN(clean) && clean !== '') {
+                        return Number(clean);
+                    }
+                    return clean;
+                });
+                sheet.addRow(row);
+            });
+            return workbook;
+        }
+
+        // Extrai dados e colunas das planilhas para enviar de contexto à IA
+        async function extractFilePreview(file) {
+            const ext = file.name.split('.').pop().toLowerCase();
+            let preview = `--- ARQUIVO DE ENTRADA: ${file.name} ---\n`;
+            
+            try {
+                if (ext === 'xlsx' || ext === 'xls') {
+                    const buffer = await readFileAsArrayBuffer(file);
+                    const tempWorkbook = new ExcelJS.Workbook();
+                    await tempWorkbook.xlsx.load(buffer);
+                    
+                    preview += `Tipo: Planilha Excel (.xlsx/.xls)\nAbas (Sheets): ${tempWorkbook.worksheets.map(w => w.name).join(', ')}\n`;
+                    
+                    for (const sheet of tempWorkbook.worksheets) {
+                        preview += `\n[Aba: ${sheet.name}]\n`;
+                        const rowCount = sheet.rowCount;
+                        const colCount = sheet.columnCount;
+                        preview += `Dimensões: ${rowCount} linhas por ${colCount} colunas\n`;
+                        
+                        // Pegar primeiras 8 linhas de exemplo
+                        preview += "Linhas de exemplo:\n";
+                        const rows = [];
+                        sheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+                            if (rowNumber <= 8) {
+                                // Converter valores para String simples de ler
+                                const rowValues = row.values.slice(1).map(val => {
+                                    if (val && typeof val === 'object') {
+                                        return val.result || val.text || JSON.stringify(val);
+                                    }
+                                    return val;
+                                });
+                                rows.push(rowValues.join(' | '));
+                            }
+                        });
+                        preview += rows.join('\n') + '\n';
+                    }
+                } else if (ext === 'csv') {
+                    const text = await readFileAsText(file);
+                    preview += `Tipo: Arquivo CSV\n`;
+                    const lines = text.split('\n').slice(0, 8);
+                    preview += `Linhas de exemplo:\n${lines.join('\n')}\n`;
+                } else {
+                    const text = await readFileAsText(file);
+                    preview += `Tipo: Arquivo de Texto (${ext})\n`;
+                    preview += `Conteúdo (primeiros 1000 caracteres):\n${text.substring(0, 1000)}\n`;
+                }
+            } catch (err) {
+                preview += `Erro ao carregar pré-visualização: ${err.message}\n`;
+            }
+            preview += "--------------------------------------\n\n";
+            return preview;
+        }
+
         btnGenerate.addEventListener('click', async () => {
             const prompt = promptInput.value.trim();
+            const apiKey = apiKeyInput.value.trim();
+
+            if (!apiKey) {
+                alert('Por favor, informe sua chave de API do Gemini no topo da tela.');
+                return;
+            }
             if (!prompt) {
                 alert('Por favor, descreva como deseja o relatório.');
                 return;
             }
-
-            const apiKey = apiKeyInput.value.trim();
-
-            // Preparar dados
-            const formData = new FormData();
-            formData.append('prompt', prompt);
-            formData.append('apiKey', apiKey);
-            selectedFiles.forEach(file => {
-                formData.append('files', file);
-            });
 
             // UI feedback
             btnGenerate.disabled = true;
@@ -802,49 +904,169 @@
             resetSteps();
             
             try {
-                // Etapa 1: Upload
+                // Etapa 1: Carregar Arquivos no Navegador
                 setStepStatus(stepUpload, 'active');
                 
-                // Realizar requisição
+                const inputFilesMap = {};
+                let fileContexts = "";
+                
+                for (const file of selectedFiles) {
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    const previewText = await extractFilePreview(file);
+                    fileContexts += previewText;
+                    
+                    if (ext === 'xlsx' || ext === 'xls') {
+                        const buffer = await readFileAsArrayBuffer(file);
+                        const wb = new ExcelJS.Workbook();
+                        await wb.xlsx.load(buffer);
+                        inputFilesMap[file.name] = wb;
+                    } else if (ext === 'csv') {
+                        const text = await readFileAsText(file);
+                        const wb = await loadCsvToWorkbook(text);
+                        inputFilesMap[file.name] = wb;
+                    } else {
+                        const text = await readFileAsText(file);
+                        inputFilesMap[file.name] = text;
+                    }
+                }
+                
                 setStepStatus(stepUpload, 'completed');
+                
+                // Etapa 2: Chamar Gemini para Codificar
                 setStepStatus(stepAi, 'active');
                 
-                const response = await fetch('/generate', {
+                const systemInstruction = `Você é um engenheiro de software especialista em manipulação de planilhas com JavaScript.
+Sua tarefa é ler dados de entrada fornecidos e gerar código JavaScript para processar esses dados e criar um relatório formatado usando a biblioteca ExcelJS.
+
+Diretrizes estritas para o código JavaScript:
+1. Você tem acesso direto aos seguintes argumentos:
+   - 'INPUT_FILES': Um objeto mapeando o nome do arquivo original para a instância de ExcelJS.Workbook ou texto.
+     Exemplo para ler planilha: const wb = INPUT_FILES['dados.xlsx']; const sheet = wb.getWorksheet(1);
+   - 'outputWorkbook': Uma nova instância de ExcelJS.Workbook() na qual você DEVE salvar os dados e criar planilhas.
+   - 'ExcelJS': O namespace do ExcelJS para estilos, fontes, alinhamentos, bordas etc.
+2. A planilha final deve ser profissional:
+   - Ajuste a largura das colunas de forma dinâmica para que os textos não fiquem cortados.
+   - Use uma paleta de cores moderna (ex: cabeçalhos em Azul Escuro '#1F4E78' com texto em branco, linhas alternadas em cinza claro '#F2F2F2').
+   - Habilite as linhas de grade visíveis na planilha de saída: ws.views = [{ showGridLines: true }];
+   - Adicione fórmulas Excel reais (ex: '=SUM(C2:C10)') para valores de totais em vez de valores fixados.
+   - Formate números adequadamente (R$ #.##0,00 para moedas, porcentagens, datas).
+3. IMPORTANTE: Retorne APENAS o código JavaScript puro dentro do bloco de código \`\`\`javascript e \`\`\`. Sem qualquer explicação extra.`;
+
+                const promptContent = `
+Arquivos disponíveis no objeto INPUT_FILES:
+${Object.keys(inputFilesMap).map(name => `- "${name}"`).join('\n')}
+
+Estruturas e prévias dos dados:
+${fileContexts}
+
+Instruções do usuário para gerar o relatório final:
+"${prompt}"
+
+Por favor, gere apenas o corpo do código JavaScript assíncrono que será executado e irá ler de INPUT_FILES e preencher outputWorkbook com a formatação e cálculos corretos.`;
+
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+                const response = await fetch(url, {
                     method: 'POST',
-                    body: formData
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        contents: [
+                            {
+                                role: 'user',
+                                parts: [
+                                    { text: systemInstruction },
+                                    { text: promptContent }
+                                ]
+                            }
+                        ]
+                    })
                 });
+
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.error?.message || 'Erro na chamada da API do Gemini.');
+                }
+
+                const responseData = await response.json();
+                const aiResponse = responseData.candidates[0].content.parts[0].text;
                 
-                const data = await response.json();
+                // Extrair bloco de código JS
+                let jsCode = "";
+                if (aiResponse.includes("```javascript")) {
+                    jsCode = aiResponse.split("```javascript")[1].split("```")[0].strip();
+                } else if (aiResponse.includes("```")) {
+                    jsCode = aiResponse.split("```")[1].split("```")[0].strip();
+                } else {
+                    jsCode = aiResponse.trim();
+                }
                 
-                if (data.success) {
-                    setStepStatus(stepAi, 'completed');
+                // Limpar protótipos de string extras
+                jsCode = jsCode.replace(/^\s*javascript\s*/i, '');
+                
+                setStepStatus(stepAi, 'completed');
+                
+                // Etapa 3: Compilar/Executar JavaScript localmente no navegador
+                setStepStatus(stepCompile, 'active');
+                
+                const outputWorkbook = new ExcelJS.Workbook();
+                let logOutput = "Iniciando compilação do relatório...\n";
+                
+                try {
+                    // Executar o código de forma isolada usando a função construtora do JS
+                    const runner = new Function('INPUT_FILES', 'outputWorkbook', 'ExcelJS', `
+                        return (async () => {
+                            ${jsCode}
+                        })();
+                    `);
+                    
+                    await runner(inputFilesMap, outputWorkbook, ExcelJS);
+                    logOutput += "Código executado com sucesso!\nPlanilha gerada no buffer.\n";
+                    
+                    // Gerar o buffer da planilha
+                    generatedWorkbookBuffer = await outputWorkbook.xlsx.writeBuffer();
+                    
                     setStepStatus(stepCompile, 'completed');
                     setStepStatus(stepComplete, 'completed');
                     
-                    // Exibir código e logs
-                    codePreview.textContent = data.code;
-                    codePreview.className = "language-python";
-                    logsPreview.textContent = data.logs || "Código executado com sucesso sem logs no stdout.";
+                    // Atualizar UI de resultado
+                    codePreview.textContent = jsCode;
+                    codePreview.className = "language-javascript";
+                    logsPreview.textContent = logOutput;
                     logsPreview.classList.remove('console-error');
                     
-                    // Link de download
-                    downloadLink.href = `/download/${data.filename}`;
-                    
                     resultsArea.style.display = 'block';
-                } else {
-                    handleFailure(data);
+                    
+                } catch (compileErr) {
+                    setStepStatus(stepCompile, 'failed');
+                    throw compileErr;
                 }
                 
             } catch (err) {
-                handleFailure({
-                    error: 'Erro de rede ou falha de conexão com o servidor local.',
-                    details: err.message
+                // Tratamento de falha completo
+                document.querySelectorAll('.status-step.active').forEach(step => {
+                    setStepStatus(step, 'failed');
                 });
+                
+                codePreview.textContent = "// Ocorreu uma falha no processamento.";
+                logsPreview.textContent = `Erro durante a execução:\n${err.message}\n\nDetalhes da pilha de execução:\n${err.stack || 'Sem rastreamento adicional.'}`;
+                logsPreview.classList.add('console-error');
+                
+                resultsArea.style.display = 'block';
+                switchTab('logs');
             } finally {
                 btnGenerate.disabled = false;
             }
         });
 
+        // Evento de Download usando FileSaver.js
+        downloadBtn.addEventListener('click', () => {
+            if (!generatedWorkbookBuffer) return;
+            const blob = new Blob([generatedWorkbookBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            saveAs(blob, `relatorio_gerado_${Date.now()}.xlsx`);
+        });
+
+        // Auxiliares do Status
         function resetSteps() {
             [stepUpload, stepAi, stepCompile, stepComplete].forEach(step => {
                 step.className = 'status-step';
@@ -854,7 +1076,7 @@
 
         function getStepDefaultIcon(id) {
             switch(id) {
-                case 'step-upload': return '<i class="fa-solid fa-cloud-arrow-up"></i>';
+                case 'step-upload': return '<i class="fa-solid fa-file-excel"></i>';
                 case 'step-ai': return '<i class="fa-solid fa-brain"></i>';
                 case 'step-compile': return '<i class="fa-solid fa-code"></i>';
                 case 'step-complete': return '<i class="fa-solid fa-check"></i>';
@@ -873,19 +1095,10 @@
             }
         }
 
-        function handleFailure(data) {
-            // Marcar etapas ativas como falhas
-            document.querySelectorAll('.status-step.active').forEach(step => {
-                setStepStatus(step, 'failed');
-            });
-            
-            codePreview.textContent = data.code || "# Nenhum código foi gerado.";
-            logsPreview.textContent = `Erro: ${data.error}\n\nDetalhes:\n${data.details || data.traceback || 'Sem detalhes adicionais.'}`;
-            logsPreview.classList.add('console-error');
-            
-            resultsArea.style.display = 'block';
-            switchTab('logs');
-        }
+        // Helpers de string
+        String.prototype.strip = function() {
+            return this.trim();
+        };
     </script>
 </body>
 </html>
